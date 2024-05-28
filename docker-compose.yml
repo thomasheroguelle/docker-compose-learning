@@ -1,0 +1,47 @@
+version: "3.9"
+
+# QUICK & DIRTY DOCKER COMPOSE FILE
+services:
+  database:
+    image: mysql:8.4
+    container_name: database
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+
+  backend:
+    image: bellsoft/liberica-openjdk-alpine:19
+    volumes:
+      - ./ToitEnVueBackEnd:/usr/src/ToitEnVueBackEnd
+    working_dir: /usr/src/ToitEnVueBackEnd
+    entrypoint: ["/bin/sh", "-c", "./gradlew build -x test && java -jar build/libs/ToitEnVueBackEnd-0.0.1-SNAPSHOT.jar"]
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/database
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+      - TOTO_APP_JWTCOOKIENAME=accesstoken
+      - TOTO_APP_JWTSECRET=NUIyMEUxRkMtNEZBMC00QUY4LUI5OEQtOEI2M0M5MTNBREI5Cg==
+      - TOTO_APP_JWTEXPIRATIONMS=86400000
+      - TOITENVUE_JWTCOOKIENAME=accesstoken
+      - TOITENVUE_JWTSECRET=NUIyMEUxRkMtNEZBMC00QUY4LUI5OEQtOEI2M0M5MTNBREI5Cg==
+      - TOITENVUE_JWTEXPIRATIONMS=86400000
+    ports:
+      - "8091:8091"
+    depends_on:
+      - database
+
+  frontend:
+    image: trion/ng-cli:18.0.1
+    volumes:
+      - ./ToitEnVueFrontEnd:/app
+    working_dir: /app
+    entrypoint: ["/bin/sh", "-c", "npm install && ng serve --host=0.0.0.0"]
+    expose:
+      - 4200
+    ports:
+      - 4200:4200
